@@ -33,7 +33,7 @@ public class ConfigParams {
     DSA_LAB("DSA_LAB"), // connected cars lab, based on docker.dsa-ac.de:20001/dev-l06-customer
     RASPBERRY("RASPBERRY"); // Raspberry Pi + Grove Base HAT
 
-    String name;
+    final String name;
 
     TargetPlatform(String name) {
       this.name = name;
@@ -59,7 +59,7 @@ public class ConfigParams {
     LOCAL("LOCAL"),
     DISTRIBUTED("DISTRIBUTED");
 
-    String name;
+    final String name;
 
     SplittingMode(String name) {
       this.name = name;
@@ -79,7 +79,7 @@ public class ConfigParams {
     MQTT("MQTT"),
     DDS("DDS");
 
-    String name;
+    final String name;
 
     MessageBroker(String name) {
       this.name = name;
@@ -98,7 +98,7 @@ public class ConfigParams {
     OFF("OFF"),
     ON("ON");
 
-    String value;
+    final String value;
 
     LogTracing(String value) {
       this.value = value;
@@ -118,7 +118,7 @@ public class ConfigParams {
     OFF("OFF"),
     ON("ON");
 
-    String name;
+    final String name;
 
     ReplayMode(String name) {
       this.name = name;
@@ -137,7 +137,7 @@ public class ConfigParams {
     OFF("OFF"),
     ON("ON");
 
-    String mode;
+    final String mode;
 
     RecordingMode(String mode) {
       this.mode = mode;
@@ -152,6 +152,25 @@ public class ConfigParams {
     }
    }
 
+  public enum PortNameTrafo {
+    OFF("OFF"),
+    ON("ON");
+
+    final String value;
+
+    PortNameTrafo(String value) {
+      this.value = value;
+    }
+
+    /**
+     * @see java.lang.Enum#toString()
+     */
+    @Override
+    public String toString() {
+      return this.value;
+    }
+  }
+
   /** property for message brokers */
   protected MessageBroker messageBroker = MessageBroker.OFF;
 
@@ -162,6 +181,8 @@ public class ConfigParams {
   protected ReplayMode replayMode = ReplayMode.OFF;
 
   protected RecordingMode recordingMode = RecordingMode.OFF;
+
+  protected PortNameTrafo portNameTrafo = PortNameTrafo.OFF;
 
   /** property for target platform */
   protected TargetPlatform targetPlatform = TargetPlatform.GENERIC;
@@ -389,6 +410,14 @@ public class ConfigParams {
 
   public void setRecordingMode(RecordingMode recordingMode) {
     this.recordingMode = recordingMode;
+  }
+
+  public PortNameTrafo getPortNameTrafo() {
+    return portNameTrafo;
+  }
+
+  public void setPortNameTrafo(PortNameTrafo portNameTrafo) {
+    this.portNameTrafo = portNameTrafo;
   }
 
   public Multimap<ComponentTypeSymbol, String> getTypeArguments() {

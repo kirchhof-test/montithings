@@ -45,6 +45,7 @@ public class MontiThingsConfiguration implements Configuration {
     SPLITTING("splitting"),
     LOGTRACING("logtracing"),
     RECORDING("recording"),
+    PORTNAME("portsToMain"),
     MESSAGEBROKER("messageBroker"),
     MESSAGEBROKER_SHORT("broker"),
     REPLAYMODE("replayMode"),
@@ -53,7 +54,7 @@ public class MontiThingsConfiguration implements Configuration {
     MAINCOMP_SHORT("main"),
     VERSION("version");
 
-    String name;
+    final String name;
 
     Options(String name) {
       this.name = name;
@@ -88,6 +89,7 @@ public class MontiThingsConfiguration implements Configuration {
     configParams.setSplittingMode(getSplittingMode());
     configParams.setLogTracing(getLogTracing());
     configParams.setRecordingMode(getRecordingMode());
+    configParams.setPortNameTrafo(getPortNameTrafo());
     configParams.setHwcTemplatePath(Paths.get(getHWCPath().getAbsolutePath()));
     configParams.setMessageBroker(getMessageBroker(getSplittingMode()));
     configParams.setReplayMode(getReplayMode());
@@ -308,11 +310,8 @@ public class MontiThingsConfiguration implements Configuration {
       return new File(out.get());
     }
     out = getAsString(Options.OUT_SHORT);
-    if (out.isPresent()) {
-      return new File(out.get());
-    }
     // fallback default is "out"
-    return new File(DEFAULT_OUTPUT_DIRECTORY);
+    return out.map(File::new).orElseGet(() -> new File(DEFAULT_OUTPUT_DIRECTORY));
   }
 
   public ConfigParams.TargetPlatform getPlatform() {
@@ -433,11 +432,7 @@ public class MontiThingsConfiguration implements Configuration {
       Log.error(MontiThingsError.GENERATOR_REPLAYDATA_REQUIRED.toString());
     }
 
-    if (path.isPresent()) {
-      return new File(path.get());
-    }
-
-    return new File(path.orElse(""));
+    return path.map(File::new).orElseGet(() -> new File(path.orElse("")));
   }
 
   public String getMainComponent() {
@@ -473,12 +468,29 @@ public class MontiThingsConfiguration implements Configuration {
     return ConfigParams.RecordingMode.OFF;
   }
 
+  public ConfigParams.PortNameTrafo getPortNameTrafo() {
+    Optional<String> portNameTrafo = getAsString(Options.PORTNAME);
+    if (portNameTrafo.isPresent()) {
+      switch (portNameTrafo.get()) {
+        case "OFF":
+          return ConfigParams.PortNameTrafo.OFF;
+        case "ON":
+          return ConfigParams.PortNameTrafo.ON;
+        default:
+          throw new IllegalArgumentException(
+              "0xMT303 portNameTrafo option " + portNameTrafo + " in pom.xml is unknown");
+      }
+    }
+    // fallback default is "off"
+    return ConfigParams.PortNameTrafo.OFF;
+  }
+
   /**
    * @param files as String names to convert
    * @return list of files by creating file objects from the Strings
    */
   protected static List<File> toFileList(List<String> files) {
-    return files.stream().collect(Collectors.mapping(file -> new File(file), Collectors.toList()));
+    return files.stream().map(File::new).collect(Collectors.toList());
   }
 
   /**

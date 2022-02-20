@@ -21,7 +21,6 @@ import cdlangextension._symboltable.ICDLangExtensionGlobalScope;
 import cdlangextension._symboltable.ICDLangExtensionScope;
 import de.monticore.cd4analysis._symboltable.CD4AnalysisGlobalScope;
 import de.monticore.cd4code.CD4CodeMill;
-import de.monticore.cd4code._symboltable.CD4CodeArtifactScope;
 import de.monticore.cd4code._symboltable.CD4CodeGlobalScope;
 import de.monticore.cd4code._symboltable.ICD4CodeGlobalScope;
 import de.monticore.cd4code._symboltable.ICD4CodeScope;
@@ -53,10 +52,7 @@ import montithings.generator.helper.GeneratorHelper;
 import montithings.generator.visitor.FindConnectStatementsVisitor;
 import montithings.generator.visitor.FindTemplatedPortsVisitor;
 import montithings.generator.visitor.GenericInstantiationVisitor;
-import montithings.trafos.DelayedChannelTrafo;
-import montithings.trafos.DelayedComputationTrafo;
-import montithings.trafos.ExternalPortMockTrafo;
-import montithings.trafos.SimplifyStatechartTrafo;
+import montithings.trafos.*;
 import montithings.util.MontiThingsError;
 import mtconfig.MTConfigTool;
 import mtconfig._ast.ASTMTConfigUnit;
@@ -112,6 +108,15 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
     /* ============================================================ */
 
     String symbolPath = target.toString() + File.separator + "symbols" + File.separator;
+
+    // Ensure symbols folder exists
+    File symbolsFolder = new File(symbolPath);
+    if (!symbolsFolder.exists()) {
+      if (!symbolsFolder.mkdirs()) {
+        Log.error("0xMT1200 Could not create directory '" + symbolsFolder.getAbsolutePath() + "'");
+      }
+    }
+
     if (!models.getClassdiagrams().isEmpty()) {
       CD4MTTool.convertToSymFile(modelPath, models.getClassdiagrams(), symbolPath);
       mp.addEntry(Paths.get(symbolPath));
@@ -137,6 +142,11 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
     ICD4CodeGlobalScope cd4MTGlobalScope = CD4CodeMill.globalScope();
     cd4MTGlobalScope.setModelPath(mp);
 
+    if (config.getPortNameTrafo() == ConfigParams.PortNameTrafo.ON) {
+      ComponentTypePortsNamingTrafo typePortsNamingTrafo = new ComponentTypePortsNamingTrafo(config.getTemplatedPorts());
+      addTrafo(typePortsNamingTrafo);
+    }
+
     MontiThingsMill.reset();
     MontiThingsMill.init();
     MontiThingsMill.globalScope().clear();
@@ -147,8 +157,13 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
       mp.addEntry(Paths.get(symbolPath));
     }
     createSymbolTable(symTab);
+    // ports introduced by the ComponentTypePortsNamingTrafo have to be added in class diagrams
+    if (config.getPortNameTrafo() == ConfigParams.PortNameTrafo.ON) {
+      componentTypeScopes = createMissingClassDiagrams(
+        (MontiThingsGlobalScope) symTab, symbolPath);
+    }
 
-    //generate here, as CD4CodeGlobalScope is reset by CDLangExtension symbol table
+    // generate here, as CD4CodeGlobalScope is reset by CDLangExtension symbol table
     generateComponentTypeCDs(componentTypeScopes, target);
 
     CDLangExtensionTool cdExtensionTool = new CDLangExtensionTool();
@@ -176,7 +191,9 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
 
     for (String model : models.getMontithings()) {
       // Parse model
-      String qualifiedModelName = Names.getQualifier(model) + "." + Names.getSimpleName(model);
+      String qualifier = Names.getQualifier(model);
+      String qualifiedModelName = qualifier + (qualifier.isEmpty() ? "" : ".")
+        + Names.getSimpleName(model);
       ComponentTypeSymbol comp = symTab.resolveComponentType(qualifiedModelName).get();
 
       Log.info("Searching templates for: " + comp.getFullName(), TOOL_NAME);
@@ -217,7 +234,7 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
     File[] packages = hwcPath.listFiles();
     List<String> executableSensorActuatorPorts = new ArrayList<>();
 
-    for (File pckg : packages) {
+    for (File pckg : Objects.requireNonNull(packages)) {
       Set<String> sensorActuatorPorts = getFilesWithEnding(
         new File(hwcPath + File.separator + pckg.getName()), getFileEndings());
       for (String port : sensorActuatorPorts) {
@@ -383,11 +400,11 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
     }
 
     generateCD(modelPath, hwcPath, target);
-    mtg.generateBuildScript(target, hwcPythonScripts);
 
     for (String model : models.getMontithings()) {
       ComponentTypeSymbol comp = modelToSymbol(model, symTab);
       if (ComponentHelper.isApplication(comp, config)) {
+        mtg.generateBuildScript(target, comp, hwcPythonScripts);
         mtg.generateDockerfileScript(target, comp, executableSensorActuatorPorts, hwcPythonScripts);
         mtg.generateCrosscompileScript(target, comp);
       }
@@ -424,7 +441,7 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
   protected void checkIfMainComponentExists(IMontiThingsGlobalScope symTab,
     Models models, ConfigParams config) {
     List<String> allComponentsList = models.getMontithings().stream()
-      .map(c -> Names.getQualifier(c) + "." + Names.getSimpleName(c))
+      .map(c -> Names.getQualifier(c) + (Names.getQualifier(c).isEmpty()? "" : ".") + Names.getSimpleName(c))
       .collect(Collectors.toList());
 
     String allComponents = String.join(", ", allComponentsList);
@@ -434,6 +451,11 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
         config.getMainComponent(), allComponents)
       );
     }
+  }
+
+  protected ComponentTypeSymbol getMainComponent (IMontiThingsGlobalScope symTab,
+      ConfigParams configParams){
+    return symTab.resolveComponentType(configParams.getMainComponent()).get();
   }
 
   protected void checkCdExtensionModels(List<String> foundCDExtensionModels, File modelPath,
@@ -664,10 +686,8 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
     for (PortSymbol port : comp.getPorts()) {
       if (config.getTemplatedPorts().contains(port)) {
         Optional<String> portType = GeneratorHelper.getPortHwcTemplateName(port, config);
-        if (portType.isPresent()) {
-          MTGenerator.generateAdditionalPort(config.getHwcTemplatePath(), target, portType.get(),
-            config, port);
-        }
+        portType.ifPresent(s ->
+          MTGenerator.generateAdditionalPort(config.getHwcTemplatePath(), target, s, config, port));
       }
     }
   }
@@ -704,7 +724,8 @@ public class MontiThingsGeneratorTool extends MontiThingsTool {
   }
 
   protected ComponentTypeSymbol modelToSymbol(String model, IMontiThingsScope symTab) {
-    String qualifiedModelName = Names.getQualifier(model) + "." + Names.getSimpleName(model);
+    String qualifiedModelName = Names.getQualifier(model)
+      + (Names.getQualifier(model).isEmpty()? "" : ".") + Names.getSimpleName(model);
     return symTab.resolveComponentType(qualifiedModelName).get();
   }
 
