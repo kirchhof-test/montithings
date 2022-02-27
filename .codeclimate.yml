@@ -13,28 +13,28 @@ plugins:
         - "**/integration-test/"
 
 exclude_patterns:
-- "**/target/"
-- "**/defaultTypes/"
-- "libraries/"
-- "**/generated-test-sources/"
-- "docs/"
-- "services/recorder/lib/**",
-- "services/log-tracing/lib/**",
-- "services/log-tracing/frontend/public/**",
-- "services/recorder/lib/**",
-- "generators/montithings2cpp/src/main/resources/test/gtests/lib/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/cereal/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/cpp-httplib/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/easyloggingpp/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/json/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/nngpp/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/rigtorp/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/sole/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/tclap/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/tl/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/record-and-replay/message-types/**",
-- "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/logtracing/interface/dds/message-types/**",
-- "**/src/test/**",
-- "**/src/integration-test/**",
-- "**/src/acceptance-test/**",
-- "docs/**"
+  - "**/target/"
+  - "**/defaultTypes/"
+  - "libraries/"
+  - "**/generated-test-sources/"
+  - "docs/"
+  - "services/recorder/lib/**",
+  - "services/log-tracing/lib/**",
+  - "services/log-tracing/frontend/public/**",
+  - "services/recorder/lib/**",
+  - "generators/montithings2cpp/src/main/resources/test/gtests/lib/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/cereal/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/cpp-httplib/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/easyloggingpp/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/json/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/nngpp/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/rigtorp/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/sole/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/tclap/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/tl/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/record-and-replay/message-types/**",
+  - "generators/montithings2cpp/src/main/resources/rte/montithings-RTE/logtracing/interface/dds/message-types/**",
+  - "**/src/test/**",
+  - "**/src/integration-test/**",
+  - "**/src/acceptance-test/**",
+  - "docs/**"
